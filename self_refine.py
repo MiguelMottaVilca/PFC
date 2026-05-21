@@ -1,18 +1,31 @@
 import os
+from datetime import datetime
 from openai import OpenAI
+from dotenv import load_dotenv
+
+# =====================================================================
+# 0. HELPER DE LOGGING
+# =====================================================================
+def log(fase, tipo, mensaje):
+    ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    print(f"[{ts}] [{fase}] [{tipo}] {mensaje}")
 
 # =====================================================================
 # 0. CONFIGURACIÓN DEL CLIENTE
 # =====================================================================
+# Carga variables de entorno desde .env
+load_dotenv()
+
 # Configura tu API key como variable de entorno:
 # export OPENAI_API_KEY="tu-clave-aqui"
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-def llamar_llm(prompt_text, model="gpt-3.5-turbo", temperature=0.7):
+def llamar_llm(prompt_text, model="gpt-3.5-turbo", temperature=0.7, fase_llamada="API"):
     """
     Función base para interactuar con la API de OpenAI.
     Se utiliza una temperatura de 0.7 tal como especifican los autores.
     """
+    log(fase_llamada, "API_CALL", f"model={model} temperature={temperature} max_tokens=300 prompt_len={len(prompt_text)}")
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -22,16 +35,24 @@ def llamar_llm(prompt_text, model="gpt-3.5-turbo", temperature=0.7):
         temperature=temperature,
         max_tokens=300
     )
-    return response.choices[0].message.content.strip()
+    contenido = response.choices[0].message.content.strip()
+    log(fase_llamada, "API_RESPONSE", f"len={len(contenido)} chars")
+    log(fase_llamada, "API_RESPONSE_RAW", repr(contenido[:500]))
+    return contenido
 
 def stop_condition(feedback, iteracion_actual, max_iter):
     """
     Función stop(fb_t, t) del Algoritmo 1.
     Se detiene si alcanza el límite de iteraciones o si el feedback es positivo.
     """
-    if "already as negative as it can get" in feedback.lower() or "excellent work" in feedback.lower():
+    stop_por_keyword = "already as negative as it can get" in feedback.lower() or "excellent work" in feedback.lower()
+    stop_por_limite = iteracion_actual >= max_iter - 1
+    log("STOP", "CHECK", f"keywords={stop_por_keyword} limite_iter={stop_por_limite} iter={iteracion_actual}/{max_iter-1}")
+    if stop_por_keyword:
+        log("STOP", "TRIGGERED", "Feedback contiene keyword de parada")
         return True
-    if iteracion_actual >= max_iter - 1:
+    if stop_por_limite:
+        log("STOP", "TRIGGERED", f"Alcanzado límite de iteraciones ({max_iter})")
         return True
     return False
 
@@ -43,8 +64,7 @@ def self_refine(x, max_iter=3):
     Implementación matemática estricta de SELF-REFINE.
     x = Input (Entrada del usuario)
     """
-    print(f"\n--- INICIANDO SELF-REFINE ---")
-    print(f"Input x: {x}\n")
+    log("MAIN", "SELF_REFINE_START", f"Input x: {x}, max_iter={max_iter}")
 
     # Prompts {p_gen, p_fb, p_refine}
     p_gen = "Rewrite the following review to have a Very Negative sentiment."
@@ -57,25 +77,29 @@ def self_refine(x, max_iter=3):
 
     # Línea 1: Inicialización -> y_0 = M(p_gen || x)
     prompt_gen = f"{p_gen}\n\nReview: {x}\nRewritten Review:"
-    y[0] = llamar_llm(prompt_gen)
-    print(f"[Iteración 0] y_0:\n{y[0]}\n")
+    log("GENERATE", "PROMPT", f"len={len(prompt_gen)} chars")
+    log("GENERATE", "PROMPT_FULL", prompt_gen)
+    y[0] = llamar_llm(prompt_gen, fase_llamada="GENERATE")
+    log("GENERATE", "RESULT", f"y_0 generado ({len(y[0])} chars): {y[0][:200]}")
 
     ultima_iteracion = 0
 
     # Línea 2: for iteration t en 0, 1, ... do
     for t in range(max_iter):
         ultima_iteracion = t
-        print(f"--- Iteración t={t} ---")
+        log("MAIN", "ITERATION_START", f"t={t}")
         
         # Línea 3: Feedback -> fb_t = M(p_fb || x || y_t)
         # Nota: Ecuación 2 indica que el feedback se basa en 'x' y 'y_t' actual.
         prompt_fb = f"{p_fb}\n\nReview: {x}\nRewritten Review: {y[t]}\nFeedback:"
-        fb[t] = llamar_llm(prompt_fb)
-        print(f"fb_{t}:\n{fb[t]}\n")
+        log("FEEDBACK", "PROMPT", f"t={t} len={len(prompt_fb)} chars")
+        log("FEEDBACK", "PROMPT_FULL", prompt_fb)
+        fb[t] = llamar_llm(prompt_fb, fase_llamada="FEEDBACK")
+        log("FEEDBACK", "RESULT", f"fb_{t} ({len(fb[t])} chars): {fb[t][:200]}")
         
         # Línea 4 y 5: if stop(fb_t, t) then break
         if stop_condition(fb[t], t, max_iter):
-            print(">>> Condición de parada stop(·) activada.")
+            log("MAIN", "STOP_BREAK", f"Bucle detenido en t={t}")
             break
             
         # Línea 7: Refine -> y_{t+1} = M(p_refine || x || y_0 || fb_0 || ... || y_t || fb_t)
@@ -86,13 +110,16 @@ def self_refine(x, max_iter=3):
             historial_concatenado += f"Feedback: {fb[i]}\n"
             
         prompt_refine = f"{p_refine}\n\n{historial_concatenado}\nNew Rewritten Review:"
-        y[t+1] = llamar_llm(prompt_refine)
-        print(f"y_{t+1}:\n{y[t+1]}\n")
+        log("REFINE", "PROMPT", f"t={t} len={len(prompt_refine)} chars (historial: {t+1} pares y/fb)")
+        log("REFINE", "PROMPT_FULL", prompt_refine)
+        y[t+1] = llamar_llm(prompt_refine, fase_llamada="REFINE")
+        log("REFINE", "RESULT", f"y_{t+1} ({len(y[t+1])} chars): {y[t+1][:200]}")
         
         # Actualizamos la última iteración válida si generamos una nueva
         ultima_iteracion = t + 1
 
     # Línea 10: return y_t (la última versión generada)
+    log("MAIN", "SELF_REFINE_END", f"Returning y_0 (len={len(y[0])}) y y_{ultima_iteracion} (len={len(y[ultima_iteracion])})")
     return y[0], y[ultima_iteracion]
 
 # =====================================================================
@@ -109,13 +136,17 @@ Review B: {review_b}
 Pick your answer from ['Review A', 'Review B', 'both', 'neither']. Generate a short explanation for your choice first.
 Then, generate 'The more aligned review is A' or 'The more aligned review is B'."""
 
+    log("EVAL", "PROMPT", f"len={len(prompt_evaluacion)} chars")
+    log("EVAL", "PROMPT_FULL", prompt_evaluacion)
+
     # T=0 para evaluación determinista
     try:
-        veredicto = llamar_llm(prompt_evaluacion, model="gpt-4", temperature=0.0)
+        veredicto = llamar_llm(prompt_evaluacion, model="gpt-4", temperature=0.0, fase_llamada="EVAL")
     except Exception as e:
-        print(f"(Fallback a GPT-3.5 para evaluar. Razón: {e})")
-        veredicto = llamar_llm(prompt_evaluacion, model="gpt-3.5-turbo", temperature=0.0)
-        
+        log("EVAL", "FALLBACK", f"GPT-4 falló: {e}. Usando GPT-3.5")
+        veredicto = llamar_llm(prompt_evaluacion, model="gpt-3.5-turbo", temperature=0.0, fase_llamada="EVAL")
+    
+    log("EVAL", "VEREDICT", veredicto)
     return veredicto
 
 # =====================================================================

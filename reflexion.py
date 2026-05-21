@@ -2,11 +2,23 @@ import os
 import io
 import traceback
 import contextlib
+from datetime import datetime
 from openai import OpenAI
+from dotenv import load_dotenv
+
+# ==========================================
+# 0. HELPER DE LOGGING
+# ==========================================
+def log(fase, tipo, mensaje):
+    ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    print(f"[{ts}] [{fase}] [{tipo}] {mensaje}")
 
 # ==========================================
 # 1. CONFIGURACIÓN Y PROMPTS
 # ==========================================
+# Carga variables de entorno desde .env
+load_dotenv()
+
 # Instancia el cliente de OpenAI. Requiere la variable de entorno OPENAI_API_KEY.
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 MODELO = "gpt-3.5-turbo" 
@@ -71,27 +83,43 @@ def evaluar_codigo(codigo_generado, tests_unitarios):
     Retorna: (Booleano indicando éxito, Mensaje de error o éxito)
     """
     codigo_completo = f"{codigo_generado}\n\n{tests_unitarios}"
+    log("EVALUADOR", "CODE_EXEC", f"Ejecutando {len(codigo_completo)} chars de código")
+    log("EVALUADOR", "CODE_EXEC_FULL", codigo_completo)
     stdout_capture = io.StringIO()
     ambiente = {}
 
     try:
         with contextlib.redirect_stdout(stdout_capture):
             exec(codigo_completo, ambiente)
+        stdout_text = stdout_capture.getvalue()
+        if stdout_text:
+            log("EVALUADOR", "STDOUT", stdout_text)
+        log("EVALUADOR", "RESULT", "Success: All tests passed.")
         return True, "Success: All tests passed."
     
     except AssertionError:
+        stdout_text = stdout_capture.getvalue()
+        if stdout_text:
+            log("EVALUADOR", "STDOUT", stdout_text)
         error_msg = traceback.format_exc()
+        log("EVALUADOR", "RESULT", f"AssertionError: {error_msg[:300]}")
         return False, f"Test failed (AssertionError):\n{error_msg}"
     
     except Exception as e:
+        stdout_text = stdout_capture.getvalue()
+        if stdout_text:
+            log("EVALUADOR", "STDOUT", stdout_text)
         error_msg = traceback.format_exc()
+        log("EVALUADOR", "RESULT", f"Error: {str(e)[:200]}")
         return False, f"Execution/Syntax error:\n{error_msg}"
 
 # ==========================================
 # 4. AGENTE (Lógica de Reflexion)
 # ==========================================
-def llamar_modelo(system_prompt, user_prompt):
+def llamar_modelo(system_prompt, user_prompt, fase_llamada="API"):
     """Interfaz estándar para comunicarse con la API de OpenAI."""
+    prompt_len = len(system_prompt) + len(user_prompt)
+    log(fase_llamada, "API_CALL", f"model={MODELO} temperature=0.5 prompt_len={prompt_len}")
     respuesta = client.chat.completions.create(
         model=MODELO,
         messages=[
@@ -100,7 +128,10 @@ def llamar_modelo(system_prompt, user_prompt):
         ],
         temperature=0.5 
     )
-    return respuesta.choices[0].message.content.strip()
+    contenido = respuesta.choices[0].message.content.strip()
+    log(fase_llamada, "API_RESPONSE", f"len={len(contenido)} chars")
+    log(fase_llamada, "API_RESPONSE_RAW", repr(contenido[:500]))
+    return contenido
 
 def ejecutar_agente_reflexion(tarea, max_intentos=4):
     """
@@ -109,55 +140,63 @@ def ejecutar_agente_reflexion(tarea, max_intentos=4):
     descripcion = tarea["descripcion"]
     tests = tarea["tests"]
     
-    print(f"\n========== INICIANDO TAREA: {tarea['id']} ==========")
+    log("MAIN", "TASK_START", f"Tarea: {tarea['id']}, max_intentos={max_intentos}")
     
     memoria_experiencias = [] # Memoria a largo plazo
     codigo_actual = ""
     
     for intento in range(max_intentos):
-        print(f"\n--- Intento {intento + 1} de {max_intentos} ---")
+        log("MAIN", "ATTEMPT_START", f"Intento {intento + 1} de {max_intentos}")
         
         # --- FASE 1: ACTOR ---
         if intento == 0:
             prompt_actor = f"Task Signature:\n{descripcion}\n\nPlease implement the function body."
+            log("ACTOR", "PROMPT", f"len={len(prompt_actor)} chars (primer intento, sin memoria)")
+            log("ACTOR", "PROMPT_FULL", prompt_actor)
         else:
             memoria_texto = "\n".join(memoria_experiencias)
             prompt_actor = f"Task Signature:\n{descripcion}\n\nPrevious Code:\n{codigo_actual}\n\nSelf-Reflection (Lessons Learned):\n{memoria_texto}\n\nWrite the corrected function body."
+            log("ACTOR", "PROMPT", f"len={len(prompt_actor)} chars (con memoria, {len(memoria_experiencias)} experiencias)")
+            log("ACTOR", "PROMPT_FULL", prompt_actor)
 
         # El LLM genera el código
-        respuesta_actor = llamar_modelo(ACTOR_SYSTEM_PROMPT, prompt_actor)
+        respuesta_actor = llamar_modelo(ACTOR_SYSTEM_PROMPT, prompt_actor, fase_llamada="ACTOR")
         
         # Ensamblar código (Firma + Cuerpo generado)
         codigo_limpio = respuesta_actor.replace("```python", "").replace("```", "").strip()
         codigo_actual = f"{descripcion}\n{codigo_limpio}"
         
-        print("CÓDIGO GENERADO:")
-        print(codigo_actual)
+        log("ACTOR", "CODE_CLEAN", f"código limpio ({len(codigo_actual)} chars)")
+        log("ACTOR", "CODE_CLEAN_FULL", codigo_actual)
         
         # --- FASE 2: EVALUADOR ---
         exito, feedback_error = evaluar_codigo(codigo_actual, tests)
         
         if exito:
-            print("\n✅ RESULTADO: Éxito. El código pasó todas las pruebas unitarias.")
+            log("MAIN", "TASK_SUCCESS", f"Tarea {tarea['id']} completada en intento {intento + 1}")
             return True, codigo_actual
             
-        print("\n❌ RESULTADO: Falló las pruebas. Analizando el error...")
+        log("MAIN", "ATTEMPT_FAIL", f"Intento {intento + 1} falló")
         
         # --- FASE 3: AUTO-REFLEXIÓN ---
         prompt_reflexion = f"Task Signature:\n{descripcion}\n\nFailed Code:\n{codigo_actual}\n\nUnit Test Error:\n{feedback_error}\n\nWhat went wrong?"
-        nueva_reflexion = llamar_modelo(REFLEXION_SYSTEM_PROMPT, prompt_reflexion)
+        log("REFLEXION", "PROMPT", f"len={len(prompt_reflexion)} chars")
+        log("REFLEXION", "PROMPT_FULL", prompt_reflexion)
+        nueva_reflexion = llamar_modelo(REFLEXION_SYSTEM_PROMPT, prompt_reflexion, fase_llamada="REFLEXION")
         
-        print("\n🧠 REFLEXIÓN GENERADA:")
-        print(nueva_reflexion)
+        log("REFLEXION", "RESULT", nueva_reflexion)
         
         # --- FASE 4: ACTUALIZAR MEMORIA ---
         memoria_experiencias.append(f"[Trial {intento+1}] {nueva_reflexion}")
+        log("MEMORIA", "UPDATE", f"Experiencias totales: {len(memoria_experiencias)}")
+        log("MEMORIA", "STATE", f"{memoria_experiencias}")
         
         # Limitar la memoria a las últimas 3 experiencias para mantener el contexto limpio
         if len(memoria_experiencias) > 3:
             memoria_experiencias.pop(0)
+            log("MEMORIA", "TRIM", "Memoria truncada a últimas 3 experiencias")
 
-    print(f"\n⚠️ Tarea {tarea['id']} fallida tras {max_intentos} intentos.")
+    log("MAIN", "TASK_FAIL", f"Tarea {tarea['id']} fallida tras {max_intentos} intentos.")
     return False, codigo_actual
 
 # ==========================================
