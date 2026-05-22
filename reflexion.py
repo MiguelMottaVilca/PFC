@@ -162,8 +162,16 @@ def ejecutar_agente_reflexion(tarea, max_intentos=4):
         # El LLM genera el código
         respuesta_actor = llamar_modelo(ACTOR_SYSTEM_PROMPT, prompt_actor, fase_llamada="ACTOR")
         
+        # Limpiar código (quitar fences) preservando indentación
+        codigo_limpio = respuesta_actor.replace("```python", "").replace("```", "")
+        # strip() completo borraría la indentación de la primera línea
+        codigo_limpio = codigo_limpio.strip('\n')
+        # Si la primera línea no tiene indentación, se la agregamos
+        lineas = codigo_limpio.split('\n')
+        if lineas and lineas[0] and not lineas[0].startswith(' '):
+            lineas[0] = '    ' + lineas[0]
+        codigo_limpio = '\n'.join(lineas)
         # Ensamblar código (Firma + Cuerpo generado)
-        codigo_limpio = respuesta_actor.replace("```python", "").replace("```", "").strip()
         codigo_actual = f"{descripcion}\n{codigo_limpio}"
         
         log("ACTOR", "CODE_CLEAN", f"código limpio ({len(codigo_actual)} chars)")
