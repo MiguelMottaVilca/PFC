@@ -1,0 +1,119 @@
+python3 self_refine.py 
+============================================================
+====== SELF-REFINE ALGORITHM 1 (PAPER IMPLEMENTATION) ======
+============================================================
+[18:25:22.099] [MAIN] [SELF_REFINE_START] Input x: The food was fantastic and the service was magical, an unforgettable experience!, max_iter=3
+[18:25:22.099] [GENERATE] [PROMPT] len=171 chars
+[18:25:22.099] [GENERATE] [PROMPT_FULL] Rewrite the following review to have a Very Negative sentiment.
+
+Review: The food was fantastic and the service was magical, an unforgettable experience!
+Rewritten Review:
+[18:25:22.099] [GENERATE] [API_CALL] model=gpt-3.5-turbo temperature=0.7 max_tokens=300 prompt_len=171
+[18:25:23.696] [GENERATE] [API_RESPONSE] len=76 chars
+[18:25:23.696] [GENERATE] [API_RESPONSE_RAW] 'The food was terrible and the service was abysmal, a forgettable experience.'
+[18:25:23.696] [GENERATE] [RESULT] y_0 generado (76 chars): The food was terrible and the service was abysmal, a forgettable experience.
+[18:25:23.696] [MAIN] [ITERATION_START] t=0
+[18:25:23.696] [FEEDBACK] [PROMPT] t=0 len=307 chars
+[18:25:23.696] [FEEDBACK] [PROMPT_FULL] Why is this review not Very negative? Identify specific positive words and suggest how to make it more negative.
+
+Review: The food was fantastic and the service was magical, an unforgettable experience!
+Rewritten Review: The food was terrible and the service was abysmal, a forgettable experience.
+Feedback:
+[18:25:23.696] [FEEDBACK] [API_CALL] model=gpt-3.5-turbo temperature=0.7 max_tokens=300 prompt_len=307
+[18:25:25.014] [FEEDBACK] [API_RESPONSE] len=397 chars
+[18:25:25.014] [FEEDBACK] [API_RESPONSE_RAW] 'In the original review, the positive words that stand out are "fantastic," "magical," and "unforgettable." To make the review more negative, you can replace these with negative words:\n\nRevised Review: The food was awful and the service was dreadful, a regrettable experience.\nFeedback: By using words such as "awful," "dreadful," and "regrettable," the revised review conveys a more negative tone.'
+[18:25:25.014] [FEEDBACK] [RESULT] fb_0 (397 chars): In the original review, the positive words that stand out are "fantastic," "magical," and "unforgettable." To make the review more negative, you can replace these with negative words:
+
+Revised Review:
+[18:25:25.014] [STOP] [CHECK] keywords=False limite_iter=False iter=0/2
+[18:25:25.014] [REFINE] [PROMPT] t=0 len=718 chars (historial: 1 pares y/fb)
+[18:25:25.014] [REFINE] [PROMPT_FULL] Okay, let's try again. Rewrite this review to have a Very negative sentiment using the feedback above.
+
+Review: The food was fantastic and the service was magical, an unforgettable experience!
+Rewritten Review: The food was terrible and the service was abysmal, a forgettable experience.
+Feedback: In the original review, the positive words that stand out are "fantastic," "magical," and "unforgettable." To make the review more negative, you can replace these with negative words:
+
+Revised Review: The food was awful and the service was dreadful, a regrettable experience.
+Feedback: By using words such as "awful," "dreadful," and "regrettable," the revised review conveys a more negative tone.
+
+New Rewritten Review:
+[18:25:25.014] [REFINE] [API_CALL] model=gpt-3.5-turbo temperature=0.7 max_tokens=300 prompt_len=718
+[18:25:26.038] [REFINE] [API_RESPONSE] len=78 chars
+[18:25:26.038] [REFINE] [API_RESPONSE_RAW] 'The food was disgusting and the service was atrocious, a miserable experience.'
+[18:25:26.038] [REFINE] [RESULT] y_1 (78 chars): The food was disgusting and the service was atrocious, a miserable experience.
+[18:25:26.038] [MAIN] [ITERATION_START] t=1
+[18:25:26.038] [FEEDBACK] [PROMPT] t=1 len=309 chars
+[18:25:26.038] [FEEDBACK] [PROMPT_FULL] Why is this review not Very negative? Identify specific positive words and suggest how to make it more negative.
+
+Review: The food was fantastic and the service was magical, an unforgettable experience!
+Rewritten Review: The food was disgusting and the service was atrocious, a miserable experience.
+Feedback:
+[18:25:26.038] [FEEDBACK] [API_CALL] model=gpt-3.5-turbo temperature=0.7 max_tokens=300 prompt_len=309
+[18:25:26.946] [FEEDBACK] [API_RESPONSE] len=367 chars
+[18:25:26.946] [FEEDBACK] [API_RESPONSE_RAW] 'In the original review, the positive words that make it not very negative are "fantastic," "magical," and "unforgettable." To make it more negative, you can use words like "disgusting" and "atrocious." \n\nHere is the rewritten review with a more negative tone: "The food was disgusting and the service was atrocious, a miserable experience that I would rather forget."'
+[18:25:26.946] [FEEDBACK] [RESULT] fb_1 (367 chars): In the original review, the positive words that make it not very negative are "fantastic," "magical," and "unforgettable." To make it more negative, you can use words like "disgusting" and "atrocious.
+[18:25:26.946] [STOP] [CHECK] keywords=False limite_iter=False iter=1/2
+[18:25:26.946] [REFINE] [PROMPT] t=1 len=1193 chars (historial: 2 pares y/fb)
+[18:25:26.946] [REFINE] [PROMPT_FULL] Okay, let's try again. Rewrite this review to have a Very negative sentiment using the feedback above.
+
+Review: The food was fantastic and the service was magical, an unforgettable experience!
+Rewritten Review: The food was terrible and the service was abysmal, a forgettable experience.
+Feedback: In the original review, the positive words that stand out are "fantastic," "magical," and "unforgettable." To make the review more negative, you can replace these with negative words:
+
+Revised Review: The food was awful and the service was dreadful, a regrettable experience.
+Feedback: By using words such as "awful," "dreadful," and "regrettable," the revised review conveys a more negative tone.
+Rewritten Review: The food was disgusting and the service was atrocious, a miserable experience.
+Feedback: In the original review, the positive words that make it not very negative are "fantastic," "magical," and "unforgettable." To make it more negative, you can use words like "disgusting" and "atrocious." 
+
+Here is the rewritten review with a more negative tone: "The food was disgusting and the service was atrocious, a miserable experience that I would rather forget."
+
+New Rewritten Review:
+[18:25:26.946] [REFINE] [API_CALL] model=gpt-3.5-turbo temperature=0.7 max_tokens=300 prompt_len=1193
+[18:25:27.677] [REFINE] [API_RESPONSE] len=79 chars
+[18:25:27.678] [REFINE] [API_RESPONSE_RAW] 'The food was revolting and the service was appalling, a nightmarish experience.'
+[18:25:27.678] [REFINE] [RESULT] y_2 (79 chars): The food was revolting and the service was appalling, a nightmarish experience.
+[18:25:27.678] [MAIN] [ITERATION_START] t=2
+[18:25:27.678] [FEEDBACK] [PROMPT] t=2 len=310 chars
+[18:25:27.678] [FEEDBACK] [PROMPT_FULL] Why is this review not Very negative? Identify specific positive words and suggest how to make it more negative.
+
+Review: The food was fantastic and the service was magical, an unforgettable experience!
+Rewritten Review: The food was revolting and the service was appalling, a nightmarish experience.
+Feedback:
+[18:25:27.678] [FEEDBACK] [API_CALL] model=gpt-3.5-turbo temperature=0.7 max_tokens=300 prompt_len=310
+[18:25:28.815] [FEEDBACK] [API_RESPONSE] len=356 chars
+[18:25:28.815] [FEEDBACK] [API_RESPONSE_RAW] 'The original review contains specific positive words such as "fantastic," "magical," and "unforgettable." To make it more negative, you can use negative words like "revolting" and "appalling" in the rewritten review to convey a stronger negative sentiment. Additionally, you can describe the experience as "nightmarish" to further emphasize the negativity.'
+[18:25:28.815] [FEEDBACK] [RESULT] fb_2 (356 chars): The original review contains specific positive words such as "fantastic," "magical," and "unforgettable." To make it more negative, you can use negative words like "revolting" and "appalling" in the r
+[18:25:28.815] [STOP] [CHECK] keywords=False limite_iter=True iter=2/2
+[18:25:28.815] [STOP] [TRIGGERED] Alcanzado límite de iteraciones (3)
+[18:25:28.815] [MAIN] [STOP_BREAK] Bucle detenido en t=2
+[18:25:28.815] [MAIN] [SELF_REFINE_END] Returning y_0 (len=76) y y_2 (len=79)
+
+============================================================
+==================== RESULTADOS FINALES ====================
+============================================================
+[Baseline (y_0)]:
+The food was terrible and the service was abysmal, a forgettable experience.
+
+[Self-Refine Final (y_t)]:
+The food was revolting and the service was appalling, a nightmarish experience.
+
+
+============================================================
+=============== EVALUACIÓN CIEGA (GPT-pref) ================
+============================================================
+[18:25:28.815] [EVAL] [PROMPT] len=440 chars
+[18:25:28.815] [EVAL] [PROMPT_FULL] Which review is more aligned with a 'Very Negative' sentiment?
+Review A: The food was terrible and the service was abysmal, a forgettable experience.
+Review B: The food was revolting and the service was appalling, a nightmarish experience.
+
+Pick your answer from ['Review A', 'Review B', 'both', 'neither']. Generate a short explanation for your choice first.
+Then, generate 'The more aligned review is A' or 'The more aligned review is B'.
+[18:25:28.815] [EVAL] [API_CALL] model=gpt-4 temperature=0.0 max_tokens=300 prompt_len=440
+[18:25:32.080] [EVAL] [API_RESPONSE] len=306 chars
+[18:25:32.080] [EVAL] [API_RESPONSE_RAW] 'Both reviews express a very negative sentiment, but Review B uses stronger negative language. Words like "revolting" and "appalling" are more intense than "terrible" and "abysmal". Also, describing the experience as "nightmarish" is more severe than calling it "forgettable".\n\nThe more aligned review is B.'
+[18:25:32.080] [EVAL] [VEREDICT] Both reviews express a very negative sentiment, but Review B uses stronger negative language. Words like "revolting" and "appalling" are more intense than "terrible" and "abysmal". Also, describing the experience as "nightmarish" is more severe than calling it "forgettable".
+
+The more aligned review is B.
+Both reviews express a very negative sentiment, but Review B uses stronger negative language. Words like "revolting" and "appalling" are more intense than "terrible" and "abysmal". Also, describing the experience as "nightmarish" is more severe than calling it "forgettable".
+
+The more aligned review is B.
