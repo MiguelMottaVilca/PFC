@@ -1,0 +1,22 @@
+{
+  "tareas": [
+    {
+      "id": "HumanEval_Ejemplo1",
+      "descripcion": "\ndef minSubArraySum(nums):\n    # Given an array of integers nums, find the minimum sum of any non-empty sub-array of nums.\n    # Example: minSubArraySum([2, 3, 4, 1, 2, 4]) == 1\n    # Example: minSubArraySum([-1, -2, -3]) == -6\n",
+      "tests": "\nassert minSubArraySum([2, 3, 4, 1, 2, 4]) == 1\nassert minSubArraySum([-1, -2, -3]) == -6\nassert minSubArraySum([5, 5, 5]) == 5\nassert minSubArraySum([3, -4, 2, -3]) == -5\n"
+    },
+    {
+      "id": "Strings_Parentesis",
+      "descripcion": "\ndef match_parens(lst):\n    # You are given a list of two strings of open '(' or close ')' parentheses only.\n    # Return 'Yes' if there is a way to concatenate them to make a valid sequence, else 'No'.\n    # Example: match_parens(['()(', ')']) == 'Yes'\n",
+      "tests": "\nassert match_parens(['()(', ')']) == 'Yes'\nassert match_parens([')', ')']) == 'No'\nassert match_parens(['((((', '((())']) == 'No'\nassert match_parens(['()', '()']) == 'Yes'\n"
+    },
+    {
+      "id": "Sentimiento_Resena",
+      "input": "The food was fantastic and the service was magical, an unforgettable experience!",
+      "p_gen": "Rewrite the following review to have a Very Negative sentiment.",
+      "p_fb": "Why is this review not Very negative? Identify specific positive words and suggest how to make it more negative.",
+      "p_refine": "Okay, let's try again. Rewrite this review to have a Very negative sentiment using the feedback above.",
+      "max_iter": 3
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import os
 import io
+import json
 import traceback
 import contextlib
 from datetime import datetime
@@ -39,40 +40,13 @@ and exactly what needs to be changed in the code to fix it. Respond ONLY with th
 """
 
 # ==========================================
-# 2. ENTORNO / TAREAS (DATASET)
+# 2. CARGA DE TAREAS DESDE JSON
 # ==========================================
-DATASET_TAREAS = [
-    {
-        "id": "HumanEval_Ejemplo1",
-        "descripcion": """
-def minSubArraySum(nums):
-    # Given an array of integers nums, find the minimum sum of any non-empty sub-array of nums.
-    # Example: minSubArraySum([2, 3, 4, 1, 2, 4]) == 1
-    # Example: minSubArraySum([-1, -2, -3]) == -6
-""",
-        "tests": """
-assert minSubArraySum([2, 3, 4, 1, 2, 4]) == 1
-assert minSubArraySum([-1, -2, -3]) == -6
-assert minSubArraySum([5, 5, 5]) == 5
-assert minSubArraySum([3, -4, 2, -3]) == -5
-"""
-    },
-    {
-        "id": "Strings_Parentesis",
-        "descripcion": """
-def match_parens(lst):
-    # You are given a list of two strings of open '(' or close ')' parentheses only.
-    # Return 'Yes' if there is a way to concatenate them to make a valid sequence, else 'No'.
-    # Example: match_parens(['()(', ')']) == 'Yes'
-""",
-        "tests": """
-assert match_parens(['()(', ')']) == 'Yes'
-assert match_parens([')', ')']) == 'No'
-assert match_parens(['((((', '((())']) == 'No'
-assert match_parens(['()', '()']) == 'Yes'
-"""
-    }
-]
+def cargar_tareas():
+    ruta = os.path.join(os.path.dirname(__file__), "tareas.json")
+    with open(ruta, "r") as f:
+        data = json.load(f)
+    return [t for t in data["tareas"] if "descripcion" in t and "tests" in t]
 
 # ==========================================
 # 3. EVALUADOR (Me)
@@ -222,7 +196,7 @@ if __name__ == "__main__":
     resultados = []
     
     # Procesar cada tarea del dataset
-    for tarea in DATASET_TAREAS:
+    for tarea in cargar_tareas():
         exito, codigo_final = ejecutar_agente_reflexion(tarea)
         resultados.append({"tarea": tarea["id"], "exito": exito})
         

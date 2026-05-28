@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -57,19 +58,31 @@ def stop_condition(feedback, iteracion_actual, max_iter):
     return False
 
 # =====================================================================
-# 1. ALGORITMO SELF-REFINE (Fiel al Algoritmo 1 del paper)
+# 1. CARGA DE TAREAS DESDE JSON
 # =====================================================================
-def self_refine(x, max_iter=3):
+def cargar_tareas():
+    ruta = os.path.join(os.path.dirname(__file__), "tareas.json")
+    with open(ruta, "r") as f:
+        data = json.load(f)
+    return [t for t in data["tareas"] if "input" in t]
+
+# =====================================================================
+# 2. ALGORITMO SELF-REFINE (Fiel al Algoritmo 1 del paper)
+# =====================================================================
+def self_refine(x, max_iter=3, p_gen=None, p_fb=None, p_refine=None):
     """
     Implementación matemática estricta de SELF-REFINE.
     x = Input (Entrada del usuario)
     """
     log("MAIN", "SELF_REFINE_START", f"Input x: {x}, max_iter={max_iter}")
 
-    # Prompts {p_gen, p_fb, p_refine}
-    p_gen = "Rewrite the following review to have a Very Negative sentiment."
-    p_fb = "Why is this review not Very negative? Identify specific positive words and suggest how to make it more negative."
-    p_refine = "Okay, let's try again. Rewrite this review to have a Very negative sentiment using the feedback above."
+    # Prompts {p_gen, p_fb, p_refine} — desde JSON si se proveen, sino defaults
+    if p_gen is None:
+        p_gen = "Rewrite the following review to have a Very Negative sentiment."
+    if p_fb is None:
+        p_fb = "Why is this review not Very negative? Identify specific positive words and suggest how to make it more negative."
+    if p_refine is None:
+        p_refine = "Okay, let's try again. Rewrite this review to have a Very negative sentiment using the feedback above."
 
     # Estructuras para almacenar los pasos en el tiempo 't'
     y = [None] * (max_iter + 1)  # Almacena y_0, y_1, ..., y_t
@@ -157,22 +170,32 @@ if __name__ == "__main__":
     print(" SELF-REFINE ALGORITHM 1 (PAPER IMPLEMENTATION) ".center(60, "="))
     print("=" * 60)
 
-    # Definimos x
-    x = "The food was fantastic and the service was magical, an unforgettable experience!"
+    tareas = cargar_tareas()
     
-    # Ejecutamos Algoritmo 1
-    y_0, y_final = self_refine(x, max_iter=3)
-    
-    print("\n" + "=" * 60)
-    print(" RESULTADOS FINALES ".center(60, "="))
-    print("=" * 60)
-    print(f"[Baseline (y_0)]:\n{y_0}\n")
-    print(f"[Self-Refine Final (y_t)]:\n{y_final}\n")
+    for tarea in tareas:
+        print("\n" + "=" * 60)
+        print(f" TAREA: {tarea['id']} ".center(60, "="))
+        print("=" * 60)
+        
+        x = tarea["input"]
+        
+        y_0, y_final = self_refine(
+            x,
+            max_iter=tarea.get("max_iter", 3),
+            p_gen=tarea.get("p_gen"),
+            p_fb=tarea.get("p_fb"),
+            p_refine=tarea.get("p_refine"),
+        )
+        
+        print("\n" + "=" * 60)
+        print(" RESULTADOS FINALES ".center(60, "="))
+        print("=" * 60)
+        print(f"[Baseline (y_0)]:\n{y_0}\n")
+        print(f"[Self-Refine Final (y_t)]:\n{y_final}\n")
 
-    print("\n" + "=" * 60)
-    print(" EVALUACIÓN CIEGA (GPT-pref) ".center(60, "="))
-    print("=" * 60)
-    
-    # Comparamos y_0 vs y_t
-    evaluacion = gpt4_pref_evaluation(review_a=y_0, review_b=y_final)
-    print(evaluacion)
+        print("\n" + "=" * 60)
+        print(" EVALUACIÓN CIEGA (GPT-pref) ".center(60, "="))
+        print("=" * 60)
+        
+        evaluacion = gpt4_pref_evaluation(review_a=y_0, review_b=y_final)
+        print(evaluacion)

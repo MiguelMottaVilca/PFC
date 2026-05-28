@@ -1,0 +1,5 @@
+openai>=1.0
+python-dotenv>=1.0
+human-eval>=1.0
+rouge-score>=0.1
+PyPDF2>=3.0
