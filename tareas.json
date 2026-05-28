@@ -11,11 +11,58 @@
       "tests": "\nassert match_parens(['()(', ')']) == 'Yes'\nassert match_parens([')', ')']) == 'No'\nassert match_parens(['((((', '((())']) == 'No'\nassert match_parens(['()', '()']) == 'Yes'\n"
     },
     {
+      "id": "Arrays_Duplicados",
+      "descripcion": "\ndef has_duplicate(nums):\n    # Given an array of integers nums, return True if any value appears at least twice, else return False.\n    # Example: has_duplicate([1, 2, 3, 1]) == True\n    # Example: has_duplicate([1, 2, 3, 4]) == False\n",
+      "tests": "\nassert has_duplicate([1, 2, 3, 1]) == True\nassert has_duplicate([1, 2, 3, 4]) == False\nassert has_duplicate([1]) == False\nassert has_duplicate([1, 1, 1, 1]) == True\n"
+    },
+    {
+      "id": "Strings_Vocales",
+      "descripcion": "\ndef count_vowels(s):\n    # Given a string s, return the number of vowels (a, e, i, o, u) in the string.\n    # The count should be case-insensitive.\n    # Example: count_vowels(\"hello\") == 2\n    # Example: count_vowels(\"AEIOU\") == 5\n",
+      "tests": "\nassert count_vowels(\"hello\") == 2\nassert count_vowels(\"AEIOU\") == 5\nassert count_vowels(\"\") == 0\nassert count_vowels(\"bcdfg\") == 0\n"
+    },
+    {
+      "id": "Math_EnteroCercano",
+      "descripcion": "\ndef closest_integer(s):\n    # Given a string s that represents a number with a decimal point, return the closest integer.\n    # Round .5 cases away from zero (i.e., round half up).\n    # Example: closest_integer(\"10\") == 10\n    # Example: closest_integer(\"10.5\") == 11\n",
+      "tests": "\nassert closest_integer(\"10\") == 10\nassert closest_integer(\"10.5\") == 11\nassert closest_integer(\"-10.5\") == -11\nassert closest_integer(\"0.4\") == 0\n"
+    },
+    {
       "id": "Sentimiento_Resena",
       "input": "The food was fantastic and the service was magical, an unforgettable experience!",
       "p_gen": "Rewrite the following review to have a Very Negative sentiment.",
       "p_fb": "Why is this review not Very negative? Identify specific positive words and suggest how to make it more negative.",
       "p_refine": "Okay, let's try again. Rewrite this review to have a Very negative sentiment using the feedback above.",
+      "max_iter": 3
+    },
+    {
+      "id": "Formalizar_Texto",
+      "input": "hey, just wanted to let u know that the meeting is tomrw at 3. cya there!",
+      "p_gen": "Rewrite the following informal text in a formal, professional tone.",
+      "p_fb": "Why is this text not sufficiently formal? Identify specific casual words or abbreviations and suggest how to make it more professional.",
+      "p_refine": "Okay, let's try again. Rewrite this text in a formal, professional tone using the feedback above.",
+      "max_iter": 3
+    },
+    {
+      "id": "Simplificar_Texto",
+      "input": "The implementation leverages a recursive divide-and-conquer paradigm to achieve optimal amortized time complexity across heterogeneous data structures.",
+      "p_gen": "Simplify the following complex text to make it easy to understand for a general audience.",
+      "p_fb": "Why is this text not simple enough? Identify specific complex words or jargon and suggest simpler alternatives.",
+      "p_refine": "Okay, let's try again. Simplify this text using the feedback above.",
+      "max_iter": 3
+    },
+    {
+      "id": "Hacer_Mas_Positivo",
+      "input": "The food was cold and the service was terrible. I will never come back to this place.",
+      "p_gen": "Rewrite the following negative review to have a Very Positive sentiment.",
+      "p_fb": "Why is this review not Very Positive? Identify specific negative words and suggest how to make it more positive.",
+      "p_refine": "Okay, let's try again. Rewrite this review to have a Very Positive sentiment using the feedback above.",
+      "max_iter": 3
+    },
+    {
+      "id": "Resumir_Texto",
+      "input": "Artificial intelligence has transformed the way we interact with technology. From virtual assistants that can schedule appointments to recommendation systems that suggest products we might like, AI has become an integral part of daily life. One of the most significant breakthroughs in recent years has been the development of large language models, which can generate human-like text, answer questions, and even write code. These models are trained on vast amounts of text data and use neural networks to understand and generate language. While there are concerns about the ethical implications of AI, the potential benefits in fields like healthcare, education, and scientific research are enormous.",
+      "p_gen": "Summarize the following text in one concise sentence.",
+      "p_fb": "Why is this summary not concise enough? Identify parts that could be shortened or removed while preserving the main idea.",
+      "p_refine": "Okay, let's try again. Write a more concise summary using the feedback above.",
       "max_iter": 3
     }
   ]
