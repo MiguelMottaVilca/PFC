@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+import sys
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -67,6 +68,16 @@ def log_task_header(task_id, idx, total):
     print(f"\n{C_BOLD_WHITE}{'=' * w}{C_RESET}")
     print(f"{C_BOLD_WHITE}  TAREA {idx}/{total}: {task_id}{C_RESET}")
     print(f"{C_BOLD_WHITE}{'=' * w}{C_RESET}")
+
+class TeeStream:
+    def __init__(self, *streams):
+        self.streams = streams
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+    def flush(self):
+        for s in self.streams:
+            s.flush()
 
 # =====================================================================
 # 0. CONFIGURACIÓN DEL CLIENTE
@@ -257,6 +268,12 @@ if __name__ == "__main__":
     print("=" * 60)
     print(" SELF-REFINE ALGORITHM 1 (PAPER IMPLEMENTATION) ".center(60, "="))
     print("=" * 60)
+
+    os.makedirs("logs", exist_ok=True)
+    log_path = f"logs/self_refine_{datetime.now():%Y%m%d_%H%M%S}.log"
+    log_file = open(log_path, "w")
+    sys.stdout = TeeStream(sys.__stdout__, log_file)
+    print(f"{C_BOLD_CYAN}Log guardado en: {log_path}{C_RESET}")
 
     tareas = cargar_tareas()
     resultados = []

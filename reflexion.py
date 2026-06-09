@@ -5,6 +5,7 @@ import traceback
 import contextlib
 from datetime import datetime
 from openai import OpenAI
+import sys
 from dotenv import load_dotenv
 
 # ==========================================
@@ -54,6 +55,16 @@ def log_attempt_header(attempt, max_attempts):
     print(f"\n{C_CYAN}{'─' * w}{C_RESET}")
     print(f"{C_CYAN}  Intento {attempt}/{max_attempts}{C_RESET}")
     print(f"{C_CYAN}{'─' * w}{C_RESET}")
+
+class TeeStream:
+    def __init__(self, *streams):
+        self.streams = streams
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+    def flush(self):
+        for s in self.streams:
+            s.flush()
 
 # ==========================================
 # 1. CONFIGURACIÓN Y PROMPTS
@@ -234,6 +245,12 @@ if __name__ == "__main__":
         print("Ejemplo en Linux/Mac: export OPENAI_API_KEY='tu_clave_aqui'")
         print("Ejemplo en Windows:   set OPENAI_API_KEY='tu_clave_aqui'")
         exit(1)
+
+    os.makedirs("logs", exist_ok=True)
+    log_path = f"logs/reflexion_{datetime.now():%Y%m%d_%H%M%S}.log"
+    log_file = open(log_path, "w")
+    sys.stdout = TeeStream(sys.__stdout__, log_file)
+    print(f"{C_BOLD_CYAN}Log guardado en: {log_path}{C_RESET}")
 
     resultados = []
     
