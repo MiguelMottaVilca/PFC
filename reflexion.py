@@ -8,11 +8,52 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 # ==========================================
-# 0. HELPER DE LOGGING
+# 0a. ANSI COLORS
+# ==========================================
+C_RESET = "\033[0m"
+C_DIM = "\033[2m"
+C_RED = "\033[31m"
+C_GREEN = "\033[32m"
+C_YELLOW = "\033[33m"
+C_BLUE = "\033[34m"
+C_MAGENTA = "\033[35m"
+C_CYAN = "\033[36m"
+C_BOLD_RED = "\033[1;31m"
+C_BOLD_GREEN = "\033[1;32m"
+C_BOLD_YELLOW = "\033[1;33m"
+C_BOLD_BLUE = "\033[1;34m"
+C_BOLD_MAGENTA = "\033[1;35m"
+C_BOLD_CYAN = "\033[1;36m"
+C_BOLD_WHITE = "\033[1;37m"
+
+FASE_COLORS = {
+    "MAIN": C_BOLD_WHITE,
+    "ACTOR": C_BOLD_BLUE,
+    "EVALUADOR": C_BOLD_GREEN,
+    "REFLEXION": C_BOLD_YELLOW,
+    "MEMORIA": C_BOLD_MAGENTA,
+}
+
+# ==========================================
+# 0b. HELPER DE LOGGING
 # ==========================================
 def log(fase, tipo, mensaje):
-    ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-    print(f"[{ts}] [{fase}] [{tipo}] {mensaje}")
+    ts = datetime.now().strftime("%H:%M:%S")
+    color = FASE_COLORS.get(fase, C_RESET)
+    style = C_DIM if (tipo.endswith("_FULL") or tipo.endswith("_RAW")) else ""
+    print(f"{style}{color}[{ts}][{fase}][{tipo}]{C_RESET} {style}{mensaje}{C_RESET}", flush=True)
+
+def log_task_header(task_id, idx, total):
+    w = 60
+    print(f"\n{C_BOLD_WHITE}{'=' * w}{C_RESET}")
+    print(f"{C_BOLD_WHITE}  TAREA {idx}/{total}: {task_id}{C_RESET}")
+    print(f"{C_BOLD_WHITE}{'=' * w}{C_RESET}")
+
+def log_attempt_header(attempt, max_attempts):
+    w = 50
+    print(f"\n{C_CYAN}{'─' * w}{C_RESET}")
+    print(f"{C_CYAN}  Intento {attempt}/{max_attempts}{C_RESET}")
+    print(f"{C_CYAN}{'─' * w}{C_RESET}")
 
 # ==========================================
 # 1. CONFIGURACIÓN Y PROMPTS
@@ -120,6 +161,7 @@ def ejecutar_agente_reflexion(tarea, max_intentos=4):
     codigo_actual = ""
     
     for intento in range(max_intentos):
+        log_attempt_header(intento + 1, max_intentos)
         log("MAIN", "ATTEMPT_START", f"Intento {intento + 1} de {max_intentos}")
         
         # --- FASE 1: ACTOR ---
@@ -156,7 +198,7 @@ def ejecutar_agente_reflexion(tarea, max_intentos=4):
         
         if exito:
             log("MAIN", "TASK_SUCCESS", f"Tarea {tarea['id']} completada en intento {intento + 1}")
-            return True, codigo_actual
+            return True, codigo_actual, intento + 1
             
         log("MAIN", "ATTEMPT_FAIL", f"Intento {intento + 1} falló")
         
@@ -179,7 +221,7 @@ def ejecutar_agente_reflexion(tarea, max_intentos=4):
             log("MEMORIA", "TRIM", "Memoria truncada a últimas 3 experiencias")
 
     log("MAIN", "TASK_FAIL", f"Tarea {tarea['id']} fallida tras {max_intentos} intentos.")
-    return False, codigo_actual
+    return False, codigo_actual, max_intentos
 
 # ==========================================
 # 5. PUNTO DE ENTRADA PRINCIPAL
@@ -196,15 +238,20 @@ if __name__ == "__main__":
     resultados = []
     
     # Procesar cada tarea del dataset
-    for tarea in cargar_tareas():
-        exito, codigo_final = ejecutar_agente_reflexion(tarea)
-        resultados.append({"tarea": tarea["id"], "exito": exito})
+    tareas = cargar_tareas()
+    for idx, tarea in enumerate(tareas, 1):
+        log_task_header(tarea["id"], idx, len(tareas))
+        exito, codigo_final, iteracion = ejecutar_agente_reflexion(tarea)
+        resultados.append({"tarea": tarea["id"], "exito": exito, "iteracion": iteracion})
         
     # Mostrar resumen final
-    print("\n\n" + "="*40)
-    print(" RESUMEN DE EVALUACIÓN FINAL ")
-    print("="*40)
+    print(f"\n\n{C_BOLD_WHITE}{'='*45}{C_RESET}")
+    print(f"{C_BOLD_WHITE} RESUMEN DE EVALUACIÓN FINAL {C_RESET}")
+    print(f"{C_BOLD_WHITE}{'='*45}{C_RESET}")
     for res in resultados:
-        estado = "✅ PASÓ" if res["exito"] else "❌ FALLÓ"
-        print(f" {res['tarea'].ljust(25)} : {estado}")
-    print("="*40)
+        if res["exito"]:
+            estado = f"{C_BOLD_GREEN}✅ PASÓ (iter {res['iteracion']}){C_RESET}"
+        else:
+            estado = f"{C_BOLD_RED}❌ FALLÓ ({res['iteracion']} intentos){C_RESET}"
+        print(f" {C_BOLD_WHITE}{res['tarea'].ljust(25)}{C_RESET} : {estado}")
+    print(f"{C_BOLD_WHITE}{'='*45}{C_RESET}")

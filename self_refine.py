@@ -5,6 +5,34 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 # =====================================================================
+# 0a. ANSI COLORS
+# =====================================================================
+C_RESET = "\033[0m"
+C_DIM = "\033[2m"
+C_RED = "\033[31m"
+C_GREEN = "\033[32m"
+C_YELLOW = "\033[33m"
+C_BLUE = "\033[34m"
+C_MAGENTA = "\033[35m"
+C_CYAN = "\033[36m"
+C_BOLD_RED = "\033[1;31m"
+C_BOLD_GREEN = "\033[1;32m"
+C_BOLD_YELLOW = "\033[1;33m"
+C_BOLD_BLUE = "\033[1;34m"
+C_BOLD_MAGENTA = "\033[1;35m"
+C_BOLD_CYAN = "\033[1;36m"
+C_BOLD_WHITE = "\033[1;37m"
+
+FASE_COLORS = {
+    "MAIN": C_BOLD_WHITE,
+    "GENERATE": C_BOLD_BLUE,
+    "FEEDBACK": C_BOLD_YELLOW,
+    "REFINE": C_BOLD_CYAN,
+    "EVAL": C_BOLD_MAGENTA,
+    "STOP": C_BOLD_RED,
+}
+
+# =====================================================================
 # Default format templates for prompt construction
 # =====================================================================
 
@@ -29,8 +57,16 @@ TEXT_FORMAT = {
 # =====================================================================
 
 def log(fase, tipo, mensaje):
-    ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-    print(f"[{ts}] [{fase}] [{tipo}] {mensaje}")
+    ts = datetime.now().strftime("%H:%M:%S")
+    color = FASE_COLORS.get(fase, C_RESET)
+    style = C_DIM if (tipo.endswith("_FULL") or tipo.endswith("_RAW")) else ""
+    print(f"{style}{color}[{ts}][{fase}][{tipo}]{C_RESET} {style}{mensaje}{C_RESET}", flush=True)
+
+def log_task_header(task_id, idx, total):
+    w = 60
+    print(f"\n{C_BOLD_WHITE}{'=' * w}{C_RESET}")
+    print(f"{C_BOLD_WHITE}  TAREA {idx}/{total}: {task_id}{C_RESET}")
+    print(f"{C_BOLD_WHITE}{'=' * w}{C_RESET}")
 
 # =====================================================================
 # 0. CONFIGURACIÓN DEL CLIENTE
@@ -135,7 +171,7 @@ def self_refine(x, task_config, max_iter=3):
         ultima_iteracion = t + 1
 
     log("MAIN", "SELF_REFINE_END", f"y_0 ({len(y[0])} chars) y y_{ultima_iteracion} ({len(y[ultima_iteracion])} chars)")
-    return y[0], y[ultima_iteracion]
+    return y[0], y[ultima_iteracion], ultima_iteracion
 
 # =====================================================================
 # 2. MÉTRICA DE EVALUACIÓN (GPT-4-pref proxy)
@@ -225,14 +261,12 @@ if __name__ == "__main__":
     tareas = cargar_tareas()
     resultados = []
 
-    for tarea in tareas:
-        print("\n" + "=" * 60)
-        print(f" TAREA: {tarea['id']} ".center(60, "="))
-        print("=" * 60)
+    for idx, tarea in enumerate(tareas, 1):
+        log_task_header(tarea["id"], idx, len(tareas))
 
         x = tarea["input"]
 
-        y_0, y_final = self_refine(x, tarea, max_iter=tarea.get("max_iter", 3))
+        y_0, y_final, num_iters = self_refine(x, tarea, max_iter=tarea.get("max_iter", 3))
 
         print("\n" + "=" * 60)
         print(" RESULTADOS FINALES ".center(60, "="))
@@ -249,9 +283,12 @@ if __name__ == "__main__":
                 )
             codigo_completo = f"{tarea['descripcion']}\n{cuerpo}"
             exito, msg = evaluar_codigo_local(codigo_completo, tarea["tests"])
-            estado = "PASÓ" if exito else "FALLÓ"
-            print(f" TESTS: {estado}")
-            resultados.append({"tarea": tarea["id"], "exito": exito})
+            if exito:
+                estado_color = f"{C_BOLD_GREEN}PASÓ ({num_iters} refinements){C_RESET}"
+            else:
+                estado_color = f"{C_BOLD_RED}FALLÓ ({num_iters} refinements){C_RESET}"
+            print(f" TESTS: {estado_color}")
+            resultados.append({"tarea": tarea["id"], "exito": exito, "iteracion": num_iters})
 
         print("\n" + "=" * 60)
         print(" EVALUACIÓN CIEGA (GPT-pref) ".center(60, "="))
@@ -261,10 +298,13 @@ if __name__ == "__main__":
         print(evaluacion)
 
     if resultados:
-        print("\n\n" + "=" * 40)
-        print(" RESUMEN DE EVALUACIÓN (TESTS) ")
-        print("=" * 40)
+        print(f"\n\n{C_BOLD_WHITE}{'='*45}{C_RESET}")
+        print(f"{C_BOLD_WHITE} RESUMEN DE EVALUACIÓN (TESTS) {C_RESET}")
+        print(f"{C_BOLD_WHITE}{'='*45}{C_RESET}")
         for res in resultados:
-            estado = "✅ PASÓ" if res["exito"] else "❌ FALLÓ"
-            print(f" {res['tarea'].ljust(25)} : {estado}")
-        print("=" * 40)
+            if res["exito"]:
+                estado = f"{C_BOLD_GREEN}✅ PASÓ ({res['iteracion']} refinements){C_RESET}"
+            else:
+                estado = f"{C_BOLD_RED}❌ FALLÓ ({res['iteracion']} refinements){C_RESET}"
+            print(f" {C_BOLD_WHITE}{res['tarea'].ljust(25)}{C_RESET} : {estado}")
+        print(f"{C_BOLD_WHITE}{'='*45}{C_RESET}")
